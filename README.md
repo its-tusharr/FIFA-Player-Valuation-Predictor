@@ -1,3 +1,4 @@
 # FIFA-Player-Valuation-Predictor
 "A machine learning-based web application to predict the market valuation of FIFA football players using historical data."
+
 "This project is a comprehensive machine learning-based application designed to predict the market valuation of FIFA football players. Built with Python, this tool processes player statistics to provide accurate valuation estimates. The core functionality includes a data-driven model that analyzes various performance metrics to determine player worth in the transfer market. This project demonstrates end-to-end implementation from data preprocessing and model training to building an intuitive user interface for real-time predictions."
