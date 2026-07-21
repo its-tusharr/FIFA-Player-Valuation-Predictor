@@ -8,9 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
-# ==============================================================================
 # 1. PAGE CONFIGURATION & STATE INITIALIZATION
-# ==============================================================================
 st.set_page_config(
     page_title="FIFA Player Valuation Predictor",
     page_icon="⚽",
@@ -30,9 +28,8 @@ def toggle_theme():
 
 IS_DARK = st.session_state.theme == "dark"
 
-# ==============================================================================
+
 # 2. DESIGN SYSTEM & CUSTOM CSS
-# ==============================================================================
 # Define color tokens based on theme
 bg = "#09090b" if IS_DARK else "#ffffff"
 bg_subtle = "#0c0c0f" if IS_DARK else "#f9fafb"
@@ -71,6 +68,11 @@ css = f"""
 header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"],
 [data-testid="stDecoration"], [data-testid="stStatusWidget"], .stDeployButton,
 div[data-testid="stSidebarCollapsedControl"] {{
+    display: none !important;
+}}
+
+/* Hide the sidebar collapse (<<) button permanently */
+[data-testid="stSidebarCollapseButton"] {{
     display: none !important;
 }}
 
@@ -345,9 +347,7 @@ section[data-testid="stSidebar"] {{
 """
 st.markdown(css, unsafe_allow_html=True)
 
-# ==============================================================================
 # 3. MOCK DATA GENERATION
-# ==============================================================================
 @st.cache_data
 def load_or_generate_dataset(n_samples=1000, seed=42):
     """
@@ -404,9 +404,8 @@ def load_or_generate_dataset(n_samples=1000, seed=42):
 
 df_players = load_or_generate_dataset()
 
-# ==============================================================================
+
 # 4. MODEL TRAINING & PIPELINE
-# ==============================================================================
 @st.cache_resource
 def train_valuation_model(df):
     """
@@ -434,9 +433,7 @@ def train_valuation_model(df):
 
 model, model_mae, model_r2, feature_importances = train_valuation_model(df_players)
 
-# ==============================================================================
 # 5. SIDEBAR CONTROLS (PLAYER INPUTS)
-# ==============================================================================
 st.sidebar.markdown(f"""
 <div style="text-align: center; padding-bottom: 1.5rem; border-bottom: 1px solid {border}; margin-bottom: 1.5rem;">
     <span style="font-size: 1.35rem; font-weight: 800; color: {text};">Attribute Controls</span>
@@ -447,7 +444,7 @@ st.sidebar.markdown(f"""
 input_overall = st.sidebar.slider(
     "Overall Rating",
     min_value=55,
-    max_value=99,
+    max_value=100,
     value=78,
     step=1,
     help="Current overall skill level of the player."
@@ -470,6 +467,12 @@ input_age = st.sidebar.slider(
     value=22,
     step=1,
     help="Age of the football player. Influences valuation trajectory."
+)
+
+input_position = st.sidebar.selectbox(
+    "Position", 
+    options=['ST', 'LW', 'RW', 'CAM', 'CM', 'CDM', 'CF', 'LM', 'RM', 'LWB', 'RWB', 'LB', 'RB', 'CB', 'GK'], 
+    index=0
 )
 
 # Player Status Card in Sidebar
@@ -530,15 +533,14 @@ st.sidebar.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ==============================================================================
 # 6. HEADER LAYOUT
-# ==============================================================================
 head_left, head_right = st.columns([9, 1.5])
 with head_left:
     st.markdown("""
     <div class="header-container">
         <div>
-            <span class="brand-title">⚽ FIFA Player Valuation Predictor</span>
+            <!-- Football ko span ke bahar nikala aur size match kiya -->
+            <span style="font-size: 1.85rem; margin-right: 8px;">⚽</span><span class="brand-title">FIFA Player Valuation Predictor</span>
             <div class="brand-subtitle">An end-to-end Machine Learning dashboard & AI data analytics interface</div>
         </div>
     </div>
@@ -551,13 +553,11 @@ with head_right:
         use_container_width=True,
         help="Switch between Dark and Light color aesthetics."
     )
-
 # Establish two tabs
 tab_pred, tab_chat = st.tabs(["📊 Valuation Predictor", "💬 AI Dataset Chat"])
 
-# ==============================================================================
+
 # 7. TAB 1: VALUATION PREDICTOR
-# ==============================================================================
 with tab_pred:
     # Perform prediction
     pred_input = pd.DataFrame({
@@ -567,210 +567,167 @@ with tab_pred:
     })
     
     predicted_val = model.predict(pred_input)[0]
-    # Format valuation nicely (e.g. €78.4M)
-    formatted_val = f"€{predicted_val:.1f}M"
     
-    # Prediction result card
-    badge_class = "badge-standard"
-    if predicted_val >= 40.0:
-        badge_class = "badge-elite"
-        badge_text = "Elite Tier Valuation"
-    elif predicted_val >= 10.0:
-        badge_class = "badge-prospect"
-        badge_text = "High-Value Asset"
-    else:
-        badge_class = "badge-standard"
-        badge_text = "Standard Market Asset"
-
-    st.markdown(f"""
-    <div class="prediction-card">
-        <div class="prediction-title">Estimated Transfer Value</div>
-        <div class="prediction-value">{formatted_val}</div>
-        <div class="prediction-badge {badge_class}">{badge_text}</div>
+# FUT Style Card integration
+    fut_card_html = f"""<div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+    <div style="background: linear-gradient(135deg, #1A1C23 0%, #101216 100%); border: 2px solid #2563eb; border-radius: 12px; padding: 1.5rem; width: 280px; text-align: center; box-shadow: 0 10px 30px -10px rgba(37,99,235,0.5); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(37,99,235,0.1) 0%, transparent 70%); z-index: 0;"></div>
+        <div style="position: relative; z-index: 1;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">
+                <div style="font-size: 3.2rem; font-weight: 900; color: white; line-height: 1;">{input_overall}</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #2563eb; text-transform: uppercase;">{input_position}</div>
+            </div>
+            <div style="font-size: 0.8rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">
+                Transfer Value
+            </div>
+            <div style="font-size: 2.8rem; font-weight: 900; background: linear-gradient(135deg, white 50%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                €{predicted_val:.1f}M
+            </div>
+        </div>
     </div>
-    """, unsafe_allow_html=True)
+</div>"""
+    st.markdown(fut_card_html, unsafe_allow_html=True)
     
-    # Visualization Section
-    col_scatter, col_bar = st.columns([6, 4])
     
-    with col_scatter:
-        st.markdown("""
-        <div class="chart-wrap">
-            <div class="chart-title">Market Valuation Distribution</div>
-            <div class="chart-subtitle">Overall Rating vs. Valuation with current selection highlighted</div>
-        """, unsafe_allow_html=True)
-        
-        # Plotly scatter plot
-        fig_scatter = px.scatter(
-            df_players,
-            x="Overall",
-            y="Value_EUR_M",
-            color="Age",
-            color_continuous_scale="Viridis",
-            labels={"Overall": "Overall Rating", "Value_EUR_M": "Valuation (€M)", "Age": "Age"},
-            hover_data=["Potential"],
-            opacity=0.6
-        )
-        
-        # Add a glowing gold star representing the predicted player
-        fig_scatter.add_trace(
-            go.Scatter(
-                x=[input_overall],
-                y=[predicted_val],
-                mode="markers",
-                marker=dict(
-                    color="#f59e0b",
-                    size=16,
-                    line=dict(color="#ffffff", width=2),
-                    symbol="star",
-                ),
-                name="Target Player",
-                hoverinfo="text",
-                hovertext=f"Selected Player<br>Age: {input_age}<br>Rating: {input_overall}<br>Potential: {input_potential}<br>Valuation: {formatted_val}"
-            )
-        )
-        
-        # Apply unified design system plot settings
-        fig_scatter.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="DM Sans, sans-serif", color="#71717a" if not IS_DARK else "#a1a1aa", size=10),
-            margin=dict(l=0, r=0, t=15, b=0),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            coloraxis_colorbar=dict(
-                title=dict(font=dict(size=10)),
-                thickness=12,
-                len=0.8,
-                yanchor="middle",
-                y=0.5
-            ),
-            xaxis=dict(
-                gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                zerolinecolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                tickfont=dict(size=10, color="#71717a"),
-            ),
-            yaxis=dict(
-                gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                zerolinecolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                tickfont=dict(size=10, color="#71717a"),
-            ),
-        )
-        
-        st.plotly_chart(fig_scatter, use_container_width=True, config={"displayModeBar": False})
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    with col_bar:
-        st.markdown("""
-        <div class="chart-wrap">
-            <div class="chart-title">Attribute Comparison</div>
-            <div class="chart-subtitle">Comparing player parameters vs. dataset average & maximum</div>
-        """, unsafe_allow_html=True)
-        
-        # Calculate dataset statistics
-        avg_age = df_players["Age"].mean()
-        avg_overall = df_players["Overall"].mean()
-        avg_potential = df_players["Potential"].mean()
-        
-        max_age = df_players["Age"].max()
-        max_overall = df_players["Overall"].max()
-        max_potential = df_players["Potential"].max()
-        
-        categories = ["Age", "Overall Rating", "Potential Rating"]
-        
-        fig_bar = go.Figure()
-        # Selected Player
-        fig_bar.add_trace(go.Bar(
-            name="Selected Player",
-            x=categories,
-            y=[input_age, input_overall, input_potential],
-            marker_color=accent,
-            width=0.25
-        ))
-        # Dataset Average
-        fig_bar.add_trace(go.Bar(
-            name="Dataset Avg",
-            x=categories,
-            y=[avg_age, avg_overall, avg_potential],
-            marker_color="#71717a" if IS_DARK else "#a1a1aa",
-            width=0.25
-        ))
-        # Dataset Max
-        fig_bar.add_trace(go.Bar(
-            name="Dataset Max",
-            x=categories,
-            y=[max_age, max_overall, max_potential],
-            marker_color=emerald,
-            width=0.25
-        ))
-        
-        fig_bar.update_layout(
-            barmode="group",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(family="DM Sans, sans-serif", color="#71717a" if not IS_DARK else "#a1a1aa", size=10),
-            margin=dict(l=0, r=0, t=15, b=0),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-            xaxis=dict(
-                gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                zerolinecolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                tickfont=dict(size=10),
-            ),
-            yaxis=dict(
-                gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                zerolinecolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-                tickfont=dict(size=10),
-            ),
-        )
-        
-        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    # Feature Importance Row
+# Main Scatter Plot (Market Valuation Distribution)
     st.markdown("""
     <div class="chart-wrap">
-        <div class="chart-title">Machine Learning Feature Significance</div>
-        <div class="chart-subtitle">Contribution of each player feature to the valuation model</div>
+    <div class="chart-title">Market Valuation Distribution</div>
+    <div class="chart-subtitle">Overall Rating vs. Valuation with current selection highlighted</div>
     """, unsafe_allow_html=True)
     
-    importance_df = pd.DataFrame({
-        "Feature": list(feature_importances.keys()),
-        "Importance": list(feature_importances.values())
-    }).sort_values(by="Importance", ascending=True)
-    
-    fig_importance = px.bar(
-        importance_df,
-        x="Importance",
-        y="Feature",
-        orientation="h",
-        labels={"Importance": "Relative Feature Weight", "Feature": "Player Attribute"},
-        color="Importance",
-        color_continuous_scale=[[0, "#3b82f6"], [1, "#10b981"]]
+    fig_scatter = px.scatter(
+        df_players,
+        x="Overall",
+        y="Value_EUR_M",
+        color="Age",
+        color_continuous_scale="Viridis",
+        labels={"Overall": "Overall Rating", "Value_EUR_M": "Valuation (€M)", "Age": "Age"},
+        hover_data=["Potential"],
+        opacity=0.6
     )
     
-    fig_importance.update_layout(
+    formatted_val = f"€{predicted_val:.1f}M"
+    fig_scatter.add_trace(
+        go.Scatter(
+            x=[input_overall],
+            y=[predicted_val],
+            mode="markers",
+            marker=dict(
+                color="#f59e0b",
+                size=16,
+                line=dict(color="#ffffff", width=2),
+                symbol="star",
+            ),
+            name="Target Player",
+            hoverinfo="text",
+            hovertext=f"Selected Player<br>Age: {input_age}<br>Rating: {input_overall}<br>Potential: {input_potential}<br>Valuation: {formatted_val}"
+        )
+    )
+    
+    fig_scatter.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        coloraxis_showscale=False,
         font=dict(family="DM Sans, sans-serif", color="#71717a" if not IS_DARK else "#a1a1aa", size=10),
-        margin=dict(l=0, r=0, t=10, b=0),
-        xaxis=dict(
-            gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-            zerolinecolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-            tickfont=dict(size=10),
-        ),
-        yaxis=dict(
-            gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-            zerolinecolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)",
-            tickfont=dict(size=10),
-        ),
+        margin=dict(l=0, r=0, t=15, b=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis=dict(gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)", tickfont=dict(size=10, color="#71717a")),
+        yaxis=dict(gridcolor="rgba(0,0,0,0.05)" if not IS_DARK else "rgba(255,255,255,0.05)", tickfont=dict(size=10, color="#71717a")),
     )
-    
-    st.plotly_chart(fig_importance, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig_scatter, use_container_width=True, config={"displayModeBar": False})
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ==============================================================================
+# NAYA UI: RADAR CHART & CAREER TRAJECTORY
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="chart-wrap">
+            <div class="chart-title">Player Profile Radar</div>
+            <div class="chart-subtitle">Attribute breakdown relative to potential</div>
+        """, unsafe_allow_html=True)
+        
+        categories = ['Overall Quality', 'Future Potential', 'Growth Room', 'Market Value Rank', 'Age Prime']
+        val_rank = min(100, (predicted_val / 150) * 100) 
+        age_prime = 100 - (abs(input_age - 26) * 6)
+        growth = min(100, (input_potential - input_overall) * 10)
+        
+        fig_radar = go.Figure()
+        fig_radar.add_trace(go.Scatterpolar(
+            r=[input_overall, input_potential, growth, val_rank, age_prime],
+            theta=categories,
+            fill='toself',
+            fillcolor='rgba(37, 99, 235, 0.4)',
+            line=dict(color='#2563eb', width=2),
+            name='Target Player'
+        ))
+        
+        fig_radar.update_layout(
+            polar=dict(radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(255,255,255,0.1)"), angularaxis=dict(gridcolor="rgba(255,255,255,0.1)")),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="DM Sans", color="#9ca3af", size=11),
+            margin=dict(l=30, r=30, t=30, b=30), showlegend=False
+        )
+        st.plotly_chart(fig_radar, use_container_width=True, config={"displayModeBar": False})
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div class="chart-wrap">
+            <div class="chart-title">Career Valuation Trajectory</div>
+            <div class="chart-subtitle">Predicted market value over the next 6 years</div>
+        """, unsafe_allow_html=True)
+        
+        future_ages = [input_age + i for i in range(7)]
+        future_overalls = [min(input_potential, input_overall + (i * 2)) for i in range(7)]
+        future_df = pd.DataFrame({"Age": future_ages, "Overall": future_overalls, "Potential": [input_potential] * 7})
+        future_vals = model.predict(future_df)
+        
+        fig_traj = go.Figure()
+        fig_traj.add_trace(go.Scatter(
+            x=[f"Age {a}" for a in future_ages], y=future_vals, fill='tozeroy', mode='lines+markers',
+            line=dict(color='#10b981', width=3), marker=dict(size=8, color='#10b981', line=dict(color='white', width=1)),
+            fillcolor='rgba(16, 185, 129, 0.2)'
+        ))
+        
+        fig_traj.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="DM Sans", color="#9ca3af", size=11), margin=dict(l=0, r=0, t=20, b=0),
+            xaxis=dict(gridcolor="rgba(255,255,255,0.05)"), yaxis=dict(gridcolor="rgba(255,255,255,0.05)", title="Value (€M)")
+        )
+        st.plotly_chart(fig_traj, use_container_width=True, config={"displayModeBar": False})
+        st.markdown("</div>", unsafe_allow_html=True)
+
+  
+    # AI SCOUT: SIMILAR PLAYERS SECTION
+    st.markdown("""
+    <div style="margin-top: 1.5rem; margin-bottom: 1rem;">
+        <span style="font-size: 1.15rem; font-weight: 700; color: white;">🔍 AI Scout: Similar Profiles in Database</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    df_players['Similarity'] = abs(df_players['Overall'] - input_overall) + \
+                               abs(df_players['Potential'] - input_potential) + \
+                               abs(df_players['Age'] - input_age) * 0.5
+    
+    similar_players = df_players.sort_values('Similarity').head(3)
+    sc_cols = st.columns(3)
+    
+    for idx, (index, row) in enumerate(similar_players.iterrows()):
+        with sc_cols[idx]:
+            st.markdown(f"""
+            <div style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="font-size: 2rem; font-weight: 900; color: white;">{int(row['Overall'])}</div>
+                <div style="font-size: 0.8rem; color: #2563eb; font-weight: 700; text-transform: uppercase;">Age: {int(row['Age'])} | Pot: {int(row['Potential'])}</div>
+                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-subtle);">
+                    <div style="font-size: 0.7rem; color: #9ca3af;">VALUATION</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: #10b981;">€{row['Value_EUR_M']:.1f}M</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+
 # 8. TAB 2: AI DATASET CHAT
-# ==============================================================================
 with tab_chat:
     st.markdown(f"""
     <div style="margin-bottom: 1.5rem;">
@@ -784,40 +741,32 @@ with tab_chat:
     if not api_key:
         st.warning("⚠️ Please enter a Google Gemini API Key in the sidebar configuration to activate the AI Dataset Chat.")
     else:
-        # Initialize Google Generative AI
         try:
             import google.generativeai as genai
             genai.configure(api_key=api_key)
             
-            # Quick suggestion buttons
-            st.markdown(f"""
-            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Suggested Queries</div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"""<div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">Suggested Queries</div>""", unsafe_allow_html=True)
             
             sq_col1, sq_col2, sq_col3 = st.columns(3)
             with sq_col1:
                 if st.button("Who are the top 3 most valuable players?", use_container_width=True):
-                    user_input_preset = "Who are the top 3 most valuable players? List their age, overall, potential and value."
-                    st.session_state.chat_history.append({"role": "user", "content": user_input_preset})
+                    st.session_state.chat_history.append({"role": "user", "content": "Who are the top 3 most valuable players? List their age, overall, potential and value."})
                     st.rerun()
             with sq_col2:
                 if st.button("What is the average age of players with overall >= 85?", use_container_width=True):
-                    user_input_preset = "What is the average age of players with an overall rating of 85 or higher?"
-                    st.session_state.chat_history.append({"role": "user", "content": user_input_preset})
+                    st.session_state.chat_history.append({"role": "user", "content": "What is the average age of players with an overall rating of 85 or higher?"})
                     st.rerun()
             with sq_col3:
                 if st.button("Explain the correlation between Age and Value.", use_container_width=True):
-                    user_input_preset = "Based on this dataset, explain the relationship and correlation between Age and market Value."
-                    st.session_state.chat_history.append({"role": "user", "content": user_input_preset})
+                    st.session_state.chat_history.append({"role": "user", "content": "Based on this dataset, explain the relationship and correlation between Age and market Value."})
                     st.rerun()
             
             st.markdown("<div style='margin-bottom: 1.5rem;'></div>", unsafe_allow_html=True)
             
-            # Construct dataset CSV summary instruction for Gemini context
             @st.cache_data
             def get_dataset_context_prompt(df):
                 csv_data = df.to_csv(index=False)
-                return f"""You are an expert FIFA Player Valuation Data Analyst AI assistant.
+                return f'''You are an expert FIFA Player Valuation Data Analyst AI assistant.
 You have full access to a dataset of 1,000 mock FIFA players with columns:
 - Age: integer (17 to 35)
 - Overall: integer (55 to 94)
@@ -825,20 +774,17 @@ You have full access to a dataset of 1,000 mock FIFA players with columns:
 - Value_EUR_M: float in millions of Euros (0.1M to 180.0M)
 
 Here is the complete dataset in CSV format:
-```csv
 {csv_data}
-```
 
 Your guidelines:
 1. Provide accurate answers based solely on calculations on this dataset.
 2. Formulate counts, averages, correlations, or lists directly using the provided CSV.
 3. Be professional, clear, and structure tables using markdown where appropriate.
 4. If a query is unrelated to the dataset or football player stats, politely steer the user back to the player data.
-"""
-            
+'''
+
             system_prompt = get_dataset_context_prompt(df_players)
             
-            # Display chat history
             st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
             for message in st.session_state.chat_history:
                 role = message["role"]
@@ -856,20 +802,15 @@ Your guidelines:
                 """, unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
             
-            # Chat input text box
             user_msg = st.chat_input("Ask a question about the FIFA player dataset...")
             
             if user_msg:
-                # Add user message to history
                 st.session_state.chat_history.append({"role": "user", "content": user_msg})
                 st.rerun()
                 
-            # If the last message is from the user, generate the response
             if len(st.session_state.chat_history) > 0 and st.session_state.chat_history[-1]["role"] == "user":
-                # Display current typing assistant bubble
                 assistant_bubble_placeholder = st.empty()
                 
-                # Fetch response from Gemini
                 with assistant_bubble_placeholder.container():
                     st.markdown(f"""
                     <div class="chat-bubble bubble-assistant">
@@ -878,9 +819,7 @@ Your guidelines:
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # Setup Gemini model
-                model_gemini = genai.GenerativeModel('gemini-2.0-flash', system_instruction=system_prompt)
-                # Prepare history format for API call
+                model_gemini = genai.GenerativeModel('gemini-3.5-flash', system_instruction=system_prompt)
                 history_input = []
                 for msg in st.session_state.chat_history[:-1]:
                     api_role = "user" if msg["role"] == "user" else "model"
@@ -895,7 +834,6 @@ Your guidelines:
                     for chunk in response_stream:
                         if chunk.text:
                             full_response += chunk.text
-                            # Update placeholder with streamed response
                             assistant_bubble_placeholder.markdown(f"""
                             <div class="chat-bubble bubble-assistant">
                                 <div class="chat-avatar avatar-assistant">AI</div>
@@ -903,7 +841,6 @@ Your guidelines:
                             </div>
                             """, unsafe_allow_html=True)
                             
-                    # Save response to history
                     st.session_state.chat_history.append({"role": "assistant", "content": full_response})
                     st.rerun()
                 except Exception as ex:
@@ -916,7 +853,6 @@ Your guidelines:
                     """, unsafe_allow_html=True)
                     st.session_state.chat_history.append({"role": "assistant", "content": err_msg})
             
-            # Reset button
             if len(st.session_state.chat_history) > 0:
                 if st.button("🧹 Clear Chat History", use_container_width=True):
                     st.session_state.chat_history = []
